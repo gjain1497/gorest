@@ -1,49 +1,53 @@
 package main
 
-import(
-	"time"
+import (
+	"context"
 	"encoding/json"
-	"github.com/go-redis/redis"
+	"time"
+
+	"github.com/go-redis/redis/v8"
 )
-type redisCache struct{
-	host string
-	db int
+
+type redisCache struct {
+	host    string
+	db      int
 	expires time.Duration
 }
 
-
-func NewRedisCache(host string, db int, exp time.Duration) UserCache{
+func NewRedisCache(host string, db int, exp time.Duration) UserCache {
 	return &redisCache{
-		host: host,
-		db: db,
+		host:    host,
+		db:      db,
 		expires: exp,
 	}
 }
 
-func (cache *redisCache) getClient() *redis.Client{
+func (cache *redisCache) getClient() *redis.Client {
 	return redis.NewClient(&redis.Options{
-		Addr: cache.host,
+		Addr:     cache.host,
 		Password: "",
-		DB: cache.db,
+		DB:       cache.db,
 	})
 }
 
-func(cache *redisCache) Set(key string, value User){
+func (cache *redisCache) Set(key string, value User) {
 	client := cache.getClient()
+	ctx := context.Background()
 
 	json, err := json.Marshal(value)
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 
-	client.Set(key, json, cache.expires*time.Second)
+	client.Set(ctx, key, json, cache.expires*time.Second)
 }
 
-func(cache *redisCache) Get(key string) *User{
+func (cache *redisCache) Get(key string) *User {
 	client := cache.getClient()
+	ctx := context.Background()
 
-	val, err := client.Get(key).Result()
-	if err != nil{
+	val, err := client.Get(ctx, key).Result()
+	if err != nil {
 		return nil
 	}
 

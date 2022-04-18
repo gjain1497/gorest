@@ -8,11 +8,18 @@ import (
 	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	// elastic "gopkg.in/olivere/elastic"
 )
 
 var DB *gorm.DB
 var err error
 var userCache UserCache = NewRedisCache("localhost:6379", 0, 10)
+
+// esclient, err := GetESClient()
+// if err != nil {
+// 	fmt.Println("Error initializing : ", err)
+// 	panic("Client fail ")
+// }
 
 const DNS = "host=localhost user=girishjain password=12345 dbname=godb port=5432 sslmode=disable TimeZone=Asia/Shanghai"
 
@@ -45,13 +52,13 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	userID := params["id"]
 	var user *User = userCache.Get(userID)
 	if user == nil {
-		userdb := DB.First(&user, userID)
+		DB.First(&user, userID)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode("No posts found")
 			return
 		}
-		userCache.Set(userID, user)
+		userCache.Set(userID, *user)
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(user)
 	} else {
